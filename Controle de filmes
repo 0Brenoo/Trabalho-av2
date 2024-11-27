@@ -1,0 +1,208 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define ARQUIVO "acervo_filmes.dat"
+
+typedef struct {
+    int id;
+    char titulo[50];
+    char genero[20];
+    int ano;
+} Filme;
+
+void adicionarFilme() {
+    Filme filme;
+    FILE *arquivo = fopen(ARQUIVO, "ab");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("ID do filme: ");
+    scanf("%d", &filme.id);
+    getchar(); // Limpar buffer
+    printf("Título do filme: ");
+    fgets(filme.titulo, 50, stdin);
+    filme.titulo[strcspn(filme.titulo, "\n")] = '\0'; // Remover nova linha
+    printf("Gênero do filme: ");
+    fgets(filme.genero, 20, stdin);
+    filme.genero[strcspn(filme.genero, "\n")] = '\0'; // Remover nova linha
+    printf("Ano de lançamento: ");
+    scanf("%d", &filme.ano);
+
+    fwrite(&filme, sizeof(Filme), 1, arquivo);
+    fclose(arquivo);
+
+    printf("Filme adicionado ao acervo com sucesso!\n");
+}
+
+void alterarFilme() {
+    int id, encontrado = 0;
+    Filme filme;
+    FILE *arquivo = fopen(ARQUIVO, "rb+");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("Informe o ID do filme que deseja alterar: ");
+    scanf("%d", &id);
+
+    while (fread(&filme, sizeof(Filme), 1, arquivo)) {
+        if (filme.id == id) {
+            encontrado = 1;
+
+            printf("Novo título: ");
+            getchar();
+            fgets(filme.titulo, 50, stdin);
+            filme.titulo[strcspn(filme.titulo, "\n")] = '\0';
+            printf("Novo gênero: ");
+            fgets(filme.genero, 20, stdin);
+            filme.genero[strcspn(filme.genero, "\n")] = '\0';
+            printf("Novo ano de lançamento: ");
+            scanf("%d", &filme.ano);
+
+            fseek(arquivo, -sizeof(Filme), SEEK_CUR);
+            fwrite(&filme, sizeof(Filme), 1, arquivo);
+            break;
+        }
+    }
+
+    fclose(arquivo);
+
+    if (encontrado)
+        printf("Dados do filme alterados com sucesso!\n");
+    else
+        printf("Filme com ID %d não encontrado.\n", id);
+}
+
+void excluirFilme() {
+    int id, encontrado = 0;
+    Filme filme;
+    FILE *arquivo = fopen(ARQUIVO, "rb");
+    FILE *temp = fopen("temp.dat", "wb");
+
+    if (!arquivo || !temp) {
+        perror("Erro ao abrir os arquivos");
+        return;
+    }
+
+    printf("Informe o ID do filme que deseja excluir: ");
+    scanf("%d", &id);
+
+    while (fread(&filme, sizeof(Filme), 1, arquivo)) {
+        if (filme.id == id) {
+            encontrado = 1;
+        } else {
+            fwrite(&filme, sizeof(Filme), 1, temp);
+        }
+    }
+
+    fclose(arquivo);
+    fclose(temp);
+
+    remove(ARQUIVO);
+    rename("temp.dat", ARQUIVO);
+
+    if (encontrado)
+        printf("Filme excluído com sucesso!\n");
+    else
+        printf("Filme com ID %d não encontrado.\n", id);
+}
+
+void consultarFilme() {
+    int id, encontrado = 0;
+    Filme filme;
+    FILE *arquivo = fopen(ARQUIVO, "rb");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("Informe o ID do filme que deseja consultar: ");
+    scanf("%d", &id);
+
+    while (fread(&filme, sizeof(Filme), 1, arquivo)) {
+        if (filme.id == id) {
+            printf("\nID: %d\n", filme.id);
+            printf("Título: %s\n", filme.titulo);
+            printf("Gênero: %s\n", filme.genero);
+            printf("Ano de lançamento: %d\n", filme.ano);
+            encontrado = 1;
+            break;
+        }
+    }
+
+    fclose(arquivo);
+
+    if (!encontrado)
+        printf("Filme com ID %d não encontrado.\n", id);
+}
+
+void listarFilmes() {
+    Filme filme;
+    FILE *arquivo = fopen(ARQUIVO, "rb");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("\nLista de filmes cadastrados:\n");
+    printf("--------------------------------------\n");
+
+    while (fread(&filme, sizeof(Filme), 1, arquivo)) {
+        printf("ID: %d\n", filme.id);
+        printf("Título: %s\n", filme.titulo);
+        printf("Gênero: %s\n", filme.genero);
+        printf("Ano de lançamento: %d\n", filme.ano);
+        printf("--------------------------------------\n");
+    }
+
+    fclose(arquivo);
+}
+
+int main() {
+    int opcao;
+
+    do {
+        printf("\nMenu de Opções:\n");
+        printf("1. Adicionar filme\n");
+        printf("2. Alterar dados de um filme\n");
+        printf("3. Excluir filme\n");
+        printf("4. Consultar filme pelo ID\n");
+        printf("5. Listar todos os filmes\n");
+        printf("0. Sair\n");
+        printf("Escolha uma opção: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                adicionarFilme();
+                break;
+            case 2:
+                alterarFilme();
+                break;
+            case 3:
+                excluirFilme();
+                break;
+            case 4:
+                consultarFilme();
+                break;
+            case 5:
+                listarFilmes();
+                break;
+            case 0:
+                printf("Saindo do programa...\n");
+                break;
+            default:
+                printf("Opção inválida! Tente novamente.\n");
+        }
+    } while (opcao != 0);
+
+    return 0;
+}
