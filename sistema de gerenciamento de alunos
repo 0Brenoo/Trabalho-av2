@@ -1,0 +1,209 @@
+# Trabalho-av2
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define ARQUIVO "alunos.dat"
+
+typedef struct {
+    int matricula;
+    char nome[50];
+    char curso[30];
+    int idade;
+} Aluno;
+
+void incluirAluno() {
+    Aluno aluno;
+    FILE *arquivo = fopen(ARQUIVO, "ab");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("Número de matrícula: ");
+    scanf("%d", &aluno.matricula);
+    getchar(); // Limpar buffer
+    printf("Nome do aluno: ");
+    fgets(aluno.nome, 50, stdin);
+    aluno.nome[strcspn(aluno.nome, "\n")] = '\0'; // Remover nova linha
+    printf("Curso: ");
+    fgets(aluno.curso, 30, stdin);
+    aluno.curso[strcspn(aluno.curso, "\n")] = '\0'; // Remover nova linha
+    printf("Idade: ");
+    scanf("%d", &aluno.idade);
+
+    fwrite(&aluno, sizeof(Aluno), 1, arquivo);
+    fclose(arquivo);
+
+    printf("Aluno incluído com sucesso!\n");
+}
+
+void alterarAluno() {
+    int matricula, encontrado = 0;
+    Aluno aluno;
+    FILE *arquivo = fopen(ARQUIVO, "rb+");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("Informe o número de matrícula do aluno que deseja alterar: ");
+    scanf("%d", &matricula);
+
+    while (fread(&aluno, sizeof(Aluno), 1, arquivo)) {
+        if (aluno.matricula == matricula) {
+            encontrado = 1;
+
+            printf("Novo nome: ");
+            getchar();
+            fgets(aluno.nome, 50, stdin);
+            aluno.nome[strcspn(aluno.nome, "\n")] = '\0';
+            printf("Novo curso: ");
+            fgets(aluno.curso, 30, stdin);
+            aluno.curso[strcspn(aluno.curso, "\n")] = '\0';
+            printf("Nova idade: ");
+            scanf("%d", &aluno.idade);
+
+            fseek(arquivo, -sizeof(Aluno), SEEK_CUR);
+            fwrite(&aluno, sizeof(Aluno), 1, arquivo);
+            break;
+        }
+    }
+
+    fclose(arquivo);
+
+    if (encontrado)
+        printf("Informações alteradas com sucesso!\n");
+    else
+        printf("Aluno com matrícula %d não encontrado.\n", matricula);
+}
+
+void excluirAluno() {
+    int matricula, encontrado = 0;
+    Aluno aluno;
+    FILE *arquivo = fopen(ARQUIVO, "rb");
+    FILE *temp = fopen("temp.dat", "wb");
+
+    if (!arquivo || !temp) {
+        perror("Erro ao abrir os arquivos");
+        return;
+    }
+
+    printf("Informe o número de matrícula do aluno que deseja excluir: ");
+    scanf("%d", &matricula);
+
+    while (fread(&aluno, sizeof(Aluno), 1, arquivo)) {
+        if (aluno.matricula == matricula) {
+            encontrado = 1;
+        } else {
+            fwrite(&aluno, sizeof(Aluno), 1, temp);
+        }
+    }
+
+    fclose(arquivo);
+    fclose(temp);
+
+    remove(ARQUIVO);
+    rename("temp.dat", ARQUIVO);
+
+    if (encontrado)
+        printf("Aluno excluído com sucesso!\n");
+    else
+        printf("Aluno com matrícula %d não encontrado.\n", matricula);
+}
+
+void consultarAluno() {
+    int matricula, encontrado = 0;
+    Aluno aluno;
+    FILE *arquivo = fopen(ARQUIVO, "rb");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("Informe o número de matrícula do aluno que deseja consultar: ");
+    scanf("%d", &matricula);
+
+    while (fread(&aluno, sizeof(Aluno), 1, arquivo)) {
+        if (aluno.matricula == matricula) {
+            printf("\nMatrícula: %d\n", aluno.matricula);
+            printf("Nome: %s\n", aluno.nome);
+            printf("Curso: %s\n", aluno.curso);
+            printf("Idade: %d\n", aluno.idade);
+            encontrado = 1;
+            break;
+        }
+    }
+
+    fclose(arquivo);
+
+    if (!encontrado)
+        printf("Aluno com matrícula %d não encontrado.\n", matricula);
+}
+
+void listarAlunos() {
+    Aluno aluno;
+    FILE *arquivo = fopen(ARQUIVO, "rb");
+
+    if (!arquivo) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    printf("\nLista de alunos cadastrados:\n");
+    printf("--------------------------------------\n");
+
+    while (fread(&aluno, sizeof(Aluno), 1, arquivo)) {
+        printf("Matrícula: %d\n", aluno.matricula);
+        printf("Nome: %s\n", aluno.nome);
+        printf("Curso: %s\n", aluno.curso);
+        printf("Idade: %d\n", aluno.idade);
+        printf("--------------------------------------\n");
+    }
+
+    fclose(arquivo);
+}
+
+int main() {
+    int opcao;
+
+    do {
+        printf("\nMenu de Opções:\n");
+        printf("1. Incluir aluno\n");
+        printf("2. Alterar informações de um aluno\n");
+        printf("3. Excluir aluno\n");
+        printf("4. Consultar aluno\n");
+        printf("5. Listar todos os alunos\n");
+        printf("0. Sair\n");
+        printf("Escolha uma opção: ");
+        scanf("%d", &opcao);
+
+        switch (opcao) {
+            case 1:
+                incluirAluno();
+                break;
+            case 2:
+                alterarAluno();
+                break;
+            case 3:
+                excluirAluno();
+                break;
+            case 4:
+                consultarAluno();
+                break;
+            case 5:
+                listarAlunos();
+                break;
+            case 0:
+                printf("Saindo do programa...\n");
+                break;
+            default:
+                printf("Opção inválida! Tente novamente.\n");
+        }
+    } while (opcao != 0);
+
+    return 0;
+}
